@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Alert Broadcasting</title>
+
+<style>
+body{
+  background:#0f2027;
+  color:#fff;
+  font-family:Arial;
+  padding:30px;
+}
+.card{
+  max-width:700px;
+  margin:auto;
+  background:#111;
+  padding:25px;
+  border-radius:12px;
+}
+input,select,textarea,button{
+  width:100%;
+  margin:10px 0;
+  padding:12px;
+  border-radius:8px;
+  border:none;
+}
+button{
+  background:#20e38a;
+  font-weight:bold;
+  cursor:pointer;
+}
+.alert{
+  background:#1c2a30;
+  padding:12px;
+  border-radius:8px;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>📢 Alert Broadcasting</h2>
+
+  <textarea id="msg" placeholder="Alert message"></textarea>
+
+  <select id="loc">
+    <option>Hyderabad</option>
+    <option>Delhi</option>
+    <option>Mumbai</option>
+    <option>Chennai</option>
+    <option>Bengaluru</option>
+  </select>
+
+  <select id="sev">
+    <option>Low</option>
+    <option>Moderate</option>
+    <option>High</option>
+  </select>
+
+  <button onclick="sendAlert()">Send Alert</button>
+
+  <hr>
+  <h3>📡 Broadcasted Alerts</h3>
+  <div id="alerts"></div>
+</div>
+
+<script>
+/* ===== AUTH ===== */
+const user = JSON.parse(localStorage.getItem("loggedUser"));
+if (!user) location.href = "login.html";
+
+/* ===== SEND ALERT ===== */
+async function sendAlert() {
+
+const message = document.getElementById("msg").value;
+const location = document.getElementById("loc").value;
+const severity = document.getElementById("sev").value;
+
+if (!message || !location) {
+  alert("Please fill all fields");
+  return;
+}
+
+try {
+  const res = await fetch("http://localhost:8163/api/alerts", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: message,
+      location: location,
+      severity: severity,
+      sentByRole: "CITIZEN"
+    })
+  });
+
+  if (!res.ok) throw new Error("Failed");
+
+  alert("✅ Alert sent to Admin");
+  document.getElementById("msg").value = "";
+
+} catch (err) {
+  console.error(err);
+  alert("❌ Failed");
+}
+}
+
+
+/* ===== LOAD ALERTS ===== */
+function loadAlerts() {
+  fetch("http://localhost:8163/api/alerts")
+    .then(r => r.json())
+    .then(data => {
+      alerts.innerHTML = data.map(a => `
+        <div class="alert">
+          <b>${a.severity}</b> | ${a.location}<br>
+          ${a.message}<br>
+          <small>${new Date(a.sentAt).toLocaleString()}</small>
+        </div>
+      `).join("");
+    });
+}
+
+loadAlerts();
+</script>
+
+</body>
+</html>

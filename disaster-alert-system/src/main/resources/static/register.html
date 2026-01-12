@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Register — Disaster Alert (Demo)</title>
+
+<style>
+  :root {
+    --bg-grad-1:#1a1c2c; 
+    --bg-grad-2:#0f3e4d;
+    --bg-grad-3:#1b5e5e;
+    --card:#0f151a;
+    --input:#162026;
+    --muted:#9bb1b9;
+    --accent:#20e38a;
+    --accent-dark:#0fb063;
+    --white:#e9f7f1;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Inter, system-ui, Arial;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3));
+  }
+
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.65);
+  }
+
+  h1 {
+    color: var(--white);
+    text-align: center;
+    margin-bottom: 18px;
+    font-size: 22px;
+  }
+
+  label {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .field {
+    width: 100%;
+    background: var(--input);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--white);
+    border: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 14px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+    color: #062014;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .detect {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--white);
+    cursor: pointer;
+  }
+
+  .role-row {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0 16px;
+  }
+
+  .role {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--white);
+    border: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .role.active {
+    background: rgba(32,227,138,0.15);
+    border-color: rgba(32,227,138,0.35);
+    color: var(--accent);
+  }
+
+  .small {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .msg {
+    height: 18px;
+    margin-top: 8px;
+    font-size: 13px;
+    text-align: center;
+    color: #ffb3b3;
+  }
+
+  @media(max-width: 420px) {
+    .card { padding: 16px; }
+  }
+</style>
+</head>
+
+
+<body>
+
+  <div class="card" role="main">
+    
+    <h1>Create your Account</h1>
+
+    <!-- Name -->
+    <label for="regName">Name</label>
+    <input id="regName" class="field" type="text" />
+
+    <!-- Phone -->
+    <label for="regPhone">Phone Number</label>
+    <input id="regPhone" class="field" type="text" />
+
+    <!-- Location -->
+    <label for="regLocation">Location</label>
+    <input id="regLocation" class="field" type="text" />
+
+    <!-- Role Selection -->
+    <div class="role-row">
+      <button type="button" class="role" data-role="ADMIN">Admin</button>
+      <button type="button" class="role" data-role="RESPONDER">Responder</button>
+      <button type="button" class="role active" data-role="CITIZEN">Citizen</button>
+    </div>
+
+    <!-- Email -->
+    <label for="regEmail">Email</label>
+    <input id="regEmail" class="field" type="email" />
+
+    <!-- Password -->
+    <label for="regPassword">Password</label>
+    <input id="regPassword" class="field" type="password" />
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button id="detectBtn" class="detect">Detect</button>
+      <button id="registerBtn" class="btn">Register</button>
+    </div>
+
+    <p class="small">
+      Already have an account?
+      <a href="login.html" style="color: var(--accent); font-weight:600;">Login</a>
+    </p>
+
+    <div class="msg" id="regMsg"></div>
+
+  </div>
+
+<script>
+  const roleButtons = document.querySelectorAll(".role");
+  let selectedRole = "CITIZEN";
+
+  roleButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      roleButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedRole = btn.dataset.role;
+    });
+  });
+
+  document.getElementById("registerBtn").addEventListener("click", async () => {
+    const msg = document.getElementById("regMsg");
+    msg.textContent = "";
+
+    const userData = {
+      name: document.getElementById("regName").value.trim(),
+      email: document.getElementById("regEmail").value.trim(),
+      password: document.getElementById("regPassword").value,
+      role: selectedRole
+    };
+
+    if (!userData.name || !userData.email || !userData.password) {
+      msg.style.color = "crimson";
+      msg.textContent = "All fields are required";
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8163/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(userData)
+      });
+
+      const result = await response.text();
+
+      if (!response.ok) {
+        msg.style.color = "crimson";
+        msg.textContent = result;
+        return;
+      }
+
+      msg.style.color = "#9fffdf";
+      msg.textContent = "Registered successfully — redirecting...";
+
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 1000);
+
+    } catch (err) {
+      msg.style.color = "crimson";
+      msg.textContent = "Server error. Try again.";
+    }
+  });
+</script>
+
+
+</body>
+</html>
