@@ -94,6 +94,12 @@
       border-radius: 12px;
       margin: 15px 0;
     }
+    .card {
+  background: linear-gradient(145deg, #101820, #0c1419);
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
 
     /* ===== ADMIN TABLE ENHANCEMENTS ===== */
     #adminTable tr {
@@ -282,6 +288,31 @@
   <div class="card" style="margin-top:20px">
     <h4>🚨 High Risk Areas</h4>
     <ul id="riskList"></ul>
+  </div>
+  <!-- ===== EXTRA ANALYTICS (DO NOT REMOVE EXISTING) ===== -->
+  <h3 style="margin-top:40px;">📈 Advanced Analytics</h3>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+
+    <div class="card">
+      <h4>🔄 Alert Lifecycle Status</h4>
+      <canvas id="alertStatusDonut"></canvas>
+    </div>
+
+    <div class="card">
+      <h4>📊 Alert Engagement</h4>
+      <canvas id="alertEngagementPie"></canvas>
+    </div>
+
+    <div class="card">
+      <h4>🚨 Alert Status Summary</h4>
+      <ul style="list-style:none;padding-left:0">
+        <li>🆕 New: <b id="statNew">0</b></li>
+        <li>✅ Accepted: <b id="statAccepted">0</b></li>
+        <li>🏁 Completed: <b id="statCompleted">0</b></li>
+      </ul>
+    </div>
+
   </div>
 </section>
 
@@ -671,23 +702,28 @@
     }
     
     let disasterChartObj, alertChartObj;
+    let alertStatusDonutObj, alertEngagementPieObj;
+
 
 function loadReports() {
   fetch("http://localhost:8163/api/reports/summary")
     .then(r => r.json())
     .then(d => {
-      // KPIs
+
+      /* ===== KPIs ===== */
       rDisTotal.innerText = d.disasters.total;
       rAlertTotal.innerText = d.alerts.total;
       rRiskCount.innerText = d.highRiskAreas.length;
       rEngage.innerText = d.engagementPercent;
 
-      // Charts (destroy old if reloading)
+      /* ===== CLEAN OLD CHARTS ===== */
       if (disasterChartObj) disasterChartObj.destroy();
       if (alertChartObj) alertChartObj.destroy();
+      if (alertStatusDonutObj) alertStatusDonutObj.destroy();
+      if (alertEngagementPieObj) alertEngagementPieObj.destroy();
 
-      // Disaster Severity Chart
-      disasterChartObj = new Chart(document.getElementById("disasterChart"), {
+      /* ===== BAR CHARTS ===== */
+      disasterChartObj = new Chart(disasterChart, {
         type: "bar",
         data: {
           labels: ["Low", "Moderate", "High"],
@@ -697,13 +733,13 @@ function loadReports() {
               d.disasters.lowSeverity,
               d.disasters.moderateSeverity,
               d.disasters.highSeverity
-            ]
+            ],
+            backgroundColor: "#03a9f4"
           }]
         }
       });
 
-      // Alert Severity Chart
-      alertChartObj = new Chart(document.getElementById("alertChart"), {
+      alertChartObj = new Chart(alertChart, {
         type: "bar",
         data: {
           labels: ["Low", "Moderate", "High"],
@@ -713,21 +749,58 @@ function loadReports() {
               d.alerts.lowSeverity,
               d.alerts.moderateSeverity,
               d.alerts.highSeverity
-            ]
+            ],
+            backgroundColor: "#ff9800"
           }]
         }
       });
 
-      // High Risk Areas list
+      /* ===== HIGH RISK AREAS ===== */
       riskList.innerHTML = "";
       d.highRiskAreas.forEach(r => {
         const li = document.createElement("li");
         li.innerText = `${r[0]} — ${r[1]} incidents`;
         riskList.appendChild(li);
       });
+
+      /* ===== STATUS COUNTS ===== */
+      statNew.innerText = d.alerts.new;
+      statAccepted.innerText = d.alerts.accepted;
+      statCompleted.innerText = d.alerts.completed;
+
+      /* ===== DONUT CHART ===== */
+      alertStatusDonutObj = new Chart(alertStatusDonut, {
+        type: "doughnut",
+        data: {
+          labels: ["New", "Accepted", "Completed"],
+          datasets: [{
+            data: [
+              d.alerts.new,
+              d.alerts.accepted,
+              d.alerts.completed
+            ],
+            backgroundColor: ["#ff9800", "#03a9f4", "#4caf50"]
+          }]
+        }
+      });
+
+      /* ===== PIE CHART ===== */
+      alertEngagementPieObj = new Chart(alertEngagementPie, {
+        type: "pie",
+        data: {
+          labels: ["Engaged", "Pending"],
+          datasets: [{
+            data: [
+              d.alerts.accepted,
+              d.alerts.total - d.alerts.accepted
+            ],
+            backgroundColor: ["#20e38a", "#f44336"]
+          }]
+        }
+      });
+
     });
 }
-
 
     /* ================= LOAD ROLE ================= */
     window.onload = () => {
